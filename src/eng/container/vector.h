@@ -249,19 +249,26 @@ namespace eng
                 data = allocator_traits::allocate(mAllocator, rangeSize);
             }
 
-            size_t assignRange = std::min(rangeSize, mSize);
+            if constexpr (std::is_trivially_copyable_v<value_type>)
+            {
+                std::memcpy(data, begin, rangeSize);
+            }
+            else
+            {
+                size_t assignRange = std::min(rangeSize, mSize);
 
-            for (size_type i = 0; i < assignRange; ++i)
-            {
-                data[i] = *begin++;
-            }
-            for (size_type i = assignRange; i < mSize; ++i)
-            {
-                allocator_traits::destroy(mAllocator, data + i);
-            }
-            for (size_type i = mSize; i < rangeSize; ++i)
-            {
-                allocator_traits::construct(mAllocator, data + i, *begin++);
+                for (size_type i = 0; i < assignRange; ++i)
+                {
+                    data[i] = *begin++;
+                }
+                for (size_type i = assignRange; i < mSize; ++i)
+                {
+                    allocator_traits::destroy(mAllocator, data + i);
+                }
+                for (size_type i = mSize; i < rangeSize; ++i)
+                {
+                    allocator_traits::construct(mAllocator, data + i, *begin++);
+                }
             }
 
             if (rangeSize > mCapacity)
