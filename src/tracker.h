@@ -14,7 +14,7 @@ struct tracker
     {
         std::cout << "Copy constructed: " << *this << '\n';
     }
-    tracker(tracker&& other) :
+    tracker(tracker&& other) noexcept :
         mValue(other.mValue)
     {
         other.mValue = nullptr;
@@ -39,6 +39,7 @@ struct tracker
     {
         if (this == &other)
         {
+            std::cout << "Copy assigned: " << *this << '\n';
             return *this;
         }
 
@@ -48,10 +49,11 @@ struct tracker
         std::cout << "Copy assigned: " << *this << '\n';
         return *this;
     }
-    tracker& operator=(tracker&& other)
+    tracker& operator=(tracker&& other) noexcept
     {
         if (this == &other)
         {
+            std::cout << "Move assigned: " << *this << '\n';
             return *this;
         }
 

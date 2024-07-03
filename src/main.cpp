@@ -1,15 +1,17 @@
 #include <iostream>
 #include <random>
+#include <vector>
 
 #include "eng/algorithm/stable_sort.h"
+#include "eng/container/vector.h"
 
 #include "tracker.h"
 #include "timer.h"
 
 int main()
 {
-    constexpr int size = 100;
-    tracker arr[size];
+    constexpr int size = 1000;
+    size_t arr[size];
 
     std::mt19937 engine{ std::random_device{ }() };
     std::uniform_int_distribution<size_t> dist{ 1, size };
@@ -25,7 +27,7 @@ int main()
     }
     std::cout << '\n';
 
-    timer<milliseconds> sortTimer;
+    timer<microseconds> sortTimer;
 
     sortTimer.start();
 
@@ -39,5 +41,26 @@ int main()
     }
     std::cout << '\n';
 
-    std::cout << sortTimer.get_duration().count() << "ms\n";
+    std::cout << sortTimer.get_duration().count() << "us\n";
+
+    eng::vector<tracker> vec;
+    vec.emplace_back(1);
+    vec.emplace_back(2);
+    vec.emplace_back(3);
+    vec.emplace_back(4);
+    vec.emplace_back(5);
+    vec.emplace_back(6);
+    vec.emplace_back(7);
+    vec.emplace_back(8);
+
+    eng::vector<tracker> vec2;
+    vec2 = vec;
+    tracker* raw = vec2.data();
+    *raw = 0;
+    
+    for (auto& i : vec2)
+    {
+        std::cout << i << ' ';
+    }
+    std::cout << '\n';
 }

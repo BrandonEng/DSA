@@ -102,18 +102,17 @@ namespace eng
 
         size_t rangeSize = end - begin;
 
-        // Min-run optimization
+        // Min-run optimization for more even merges
         size_t min_run = rangeSize;
-        constexpr size_t MIN_RUN_THRESHOLD = 16;
+        constexpr size_t MIN_RUN_THRESHOLD = 10;
         while (min_run >= MIN_RUN_THRESHOLD)
         {
             min_run = (min_run + 1) / 2;
         }
 
-        // Use insertion sort for small runs
         constexpr size_t REVERSAL_TOLERANCE = 2;    // Tolerance specifies meaningful reversals
         reverse_strictly_decreasing(begin, end, REVERSAL_TOLERANCE);    // Reduce worst-case for insertion sort
-        for (size_t i = 0; i < rangeSize; i += min_run)
+        for (size_t i = 0; i < rangeSize; i += min_run) // Use insertion sort for small runs
         {
             insertion_sort(begin + i, begin + std::min(i + min_run, rangeSize));
         }
