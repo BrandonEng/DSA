@@ -1,8 +1,9 @@
 #pragma once
 
-#include <memory>
+#include <algorithm>
 #include <cstring>
 #include <iterator>
+#include <memory>
 
 namespace eng
 {
