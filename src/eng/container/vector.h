@@ -284,34 +284,34 @@ namespace eng
             return mData[index];
         }
 
-        static constexpr size_type max_size()
+        static constexpr size_type max_size() noexcept
         {
             return std::numeric_limits<size_type>::max();
         }
 
-        constexpr bool empty() const
+        constexpr bool empty() const noexcept
         {
             return !mSize;
         }
-        constexpr size_type size() const
+        constexpr size_type size() const noexcept
         {
             return mSize;
         }
-        constexpr size_type capacity() const
+        constexpr size_type capacity() const noexcept
         {
             return mCapacity;
         }
-        constexpr value_type* data() const
+        constexpr value_type* data() const noexcept
         {
             return mData;
         }
-        constexpr allocator_type& get_allocator()
+        constexpr allocator_type& get_allocator() noexcept
         {
-            return *this;
+            return mAllocator;
         }
-        constexpr const allocator_type& get_allocator() const
+        constexpr const allocator_type& get_allocator() const noexcept
         {
-            return *this;
+            return mAllocator;
         }
 
         constexpr value_type& front()
@@ -331,38 +331,38 @@ namespace eng
             return mData[mSize - 1];
         }
 
-        constexpr iterator begin() const
+        constexpr iterator begin() const noexcept
         {
             return mData;
         }
-        constexpr iterator end() const
+        constexpr iterator end() const noexcept
         {
             return mData + mSize;
         }
 
-        constexpr const_iterator cbegin() const
+        constexpr const_iterator cbegin() const noexcept
         {
             return mData;
         }
-        constexpr const_iterator cend() const
+        constexpr const_iterator cend() const noexcept
         {
             return mData + mSize;
         }
 
-        constexpr reverse_iterator rbegin() const
+        constexpr reverse_iterator rbegin() const noexcept
         {
             return mData + mSize - 1;
         }
-        constexpr reverse_iterator rend() const
+        constexpr reverse_iterator rend() const noexcept
         {
             return mData - 1;
         }
 
-        constexpr const_reverse_iterator crbegin() const
+        constexpr const_reverse_iterator crbegin() const noexcept
         {
             return mData + mSize - 1;
         }
-        constexpr const_reverse_iterator crend() const
+        constexpr const_reverse_iterator crend() const noexcept
         {
             return mData - 1;
         }
