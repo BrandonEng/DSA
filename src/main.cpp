@@ -43,15 +43,15 @@ int main()
 
     std::cout << sortTimer.get_duration().count() << "us\n";
 
-    eng::vector<tracker> vec;
-    vec.emplace_back(1);
-    vec.emplace_back(2);
-    vec.emplace_back(3);
-    vec.emplace_back(4);
-    vec.emplace_back(5);
-    vec.emplace_back(6);
-    vec.emplace_back(7);
-    vec.emplace_back(8);
+    eng::vector<tracker> vec = { 10, 20, 30, 40, 50 };
+    vec.push_back(1);
+    vec.push_back(2);
+    vec.push_back(3);
+    vec.push_back(4);
+    vec.push_back(5);
+    vec.push_back(6);
+    vec.push_back(7);
+    vec.push_back(8);
 
     eng::vector<tracker> vec2;
     vec2 = vec;

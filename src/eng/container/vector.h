@@ -20,7 +20,7 @@ namespace eng
         using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     private:
-        using allocator_traits = std::allocator_traits<Allocator>;
+        using allocator_traits = std::allocator_traits<allocator_type>;
 
         static constexpr double GROWTH_FACTOR = 1.5;
         static constexpr size_type DEFAULT_SIZE = 4;
@@ -32,7 +32,7 @@ namespace eng
             mCapacity(0),
             mData(nullptr)
         { }
-        constexpr vector(const Allocator& alloc) :
+        constexpr vector(const allocator_type& alloc) :
             mAllocator(alloc),
             mSize(0),
             mCapacity(0),
@@ -44,17 +44,7 @@ namespace eng
             mCapacity(other.mCapacity),
             mData(allocator_traits::allocate(mAllocator, mCapacity))
         {
-            if constexpr (std::is_trivially_copyable_v<value_type>)
-            {
-                std::memcpy(mData, other.mData, other.mSize);
-            }
-            else
-            {
-                for (size_type i = 0; i < mSize; ++i)
-                {
-                    allocator_traits::construct(mAllocator, mData + i, other[i]);
-                }
-            }
+            std::uninitialized_copy_n(other.mData, mSize, mData);
         }
         constexpr vector(const vector& other) :
             vector(other, allocator_traits::select_on_copy_construction(other.mAllocator))
@@ -74,25 +64,19 @@ namespace eng
             mCapacity(count),
             mData(allocator_traits::allocate(mAllocator, mCapacity))
         {
-            for (size_type i = 0; i < count; ++i)
-            {
-                allocator_traits::construct(mAllocator, mData + i);
-            }
+            std::uninitialized_default_construct_n(mData, count);
         }
         constexpr vector(size_type count, const value_type& value, const allocator_type& alloc = allocator_type{ }) :
             mAllocator(alloc),
-            mSize(0),
+            mSize(count),
             mCapacity(count),
             mData(allocator_traits::allocate(mAllocator, mCapacity))
         {
-            assign(count, value);
+            std::uninitialized_fill_n(mData, count, value);
         }
 
         constexpr vector(std::initializer_list<value_type> list, const allocator_type alloc = { }) :
-            mAllocator(alloc),
-            mSize(0),
-            mCapacity(list.size()),
-            mData(allocator_traits::allocate(mAllocator, mCapacity))
+            vector(alloc)
         {
             assign(list.begin(), list.end());
         }
@@ -116,8 +100,8 @@ namespace eng
                 swap_with_allocator(other);
                 return *this;
             }
-
-            if constexpr (std::is_nothrow_move_assignable_v<value_type> && std::is_nothrow_move_constructible_v<value_type>)
+            
+            if constexpr (std::is_nothrow_move_constructible_v<value_type> || !std::is_copy_constructible_v<value_type>)
             {
                 assign(std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
             }
@@ -133,7 +117,7 @@ namespace eng
             return *this;
         }
 
-        constexpr ~vector()
+        ~vector()
         {
             reset();
         }
@@ -150,7 +134,7 @@ namespace eng
                 reallocate(mSize ? mSize * GROWTH_FACTOR : DEFAULT_SIZE);
             }
 
-            allocator_traits::construct(mAllocator, mData + mSize, std::forward<Arguments>(args)...);
+            std::construct_at(mData + mSize, std::forward<Arguments>(args)...);
             return mData[mSize++];
         }
         constexpr void pop_back()
@@ -194,14 +178,11 @@ namespace eng
             {
                 reallocate(newSize);
             }
-            for (size_type i = oldSize; i < newSize; ++i)
-            {
-                allocator_traits::construct(mAllocator, mData + i);
-            }
+            std::uninitialized_default_construct_n(mData, (oldSize < newSize ? newSize - oldSize : 0));
         }
         constexpr void shrink_to_fit()
         {
-            if (mSize != mCapacity)
+            if (mSize >= mCapacity)
             {
                 reallocate(mSize);
             }
@@ -217,18 +198,9 @@ namespace eng
 
             size_t assignRange = std::min(count, mSize);
 
-            for (size_type i = 0; i < assignRange; ++i)
-            {
-                data[i] = value;
-            }
-            for (size_type i = assignRange; i < mSize; ++i)
-            {
-                allocator_traits::destroy(mAllocator, data + i);
-            }
-            for (size_type i = mSize; i < count; ++i)
-            {
-                allocator_traits::construct(mAllocator, data + i, value);
-            }
+            std::fill_n(data, assignRange, value);
+            std::destroy_n(data + assignRange, (assignRange < mSize ? mSize - assignRange : 0));
+            std::uninitialized_fill_n(data + mSize, (mSize < count ? count - mSize : 0), value);
 
             if (count > mCapacity)
             {
@@ -257,18 +229,9 @@ namespace eng
             {
                 size_t assignRange = std::min(rangeSize, mSize);
 
-                for (size_type i = 0; i < assignRange; ++i)
-                {
-                    data[i] = *begin++;
-                }
-                for (size_type i = assignRange; i < mSize; ++i)
-                {
-                    allocator_traits::destroy(mAllocator, data + i);
-                }
-                for (size_type i = mSize; i < rangeSize; ++i)
-                {
-                    allocator_traits::construct(mAllocator, data + i, *begin++);
-                }
+                std::copy_n(begin, assignRange, data);
+                std::destroy_n(data + assignRange, (assignRange < mSize ? mSize - assignRange : 0));
+                std::uninitialized_copy_n(begin + assignRange, (assignRange < rangeSize ? rangeSize - assignRange : 0), data + mSize);
             }
 
             if (rangeSize > mCapacity)
@@ -304,7 +267,24 @@ namespace eng
             return mData[index];
         }
 
-        static constexpr size_type max_size() const
+        constexpr value_type& at(size_type index)
+        {
+            if (index >= mSize)
+            {
+                throw std::out_of_range("vector::at(size_type) tried to access an element out of bounds");
+            }
+            return mData[index];
+        }
+        constexpr const value_type& at(size_type index) const
+        {
+            if (index >= mSize)
+            {
+                throw std::out_of_range("vector::at(size_type) tried to access an element out of bounds");
+            }
+            return mData[index];
+        }
+
+        static constexpr size_type max_size()
         {
             return std::numeric_limits<size_type>::max();
         }
@@ -401,13 +381,13 @@ namespace eng
         }
         constexpr bool operator==(const vector& other) const = default;
 
-    private:
+    protected:
         constexpr void reallocate(size_type newCapacity)
         {
             value_type* newData = allocator_traits::allocate(mAllocator, newCapacity);
             size_type newSize = std::min(newCapacity, mSize);   // Account for shrinking
             
-            // Relocate data to new buffer
+            // Relocate data to new buffer; cannot use stdlib algs due to lack of ranged move_if_noexcept and destroy_at
             if constexpr (std::is_trivially_copyable_v<value_type>) // Try to memcpy for trivial types
             {
                 std::memcpy(newData, mData, newSize);
@@ -416,17 +396,14 @@ namespace eng
             {
                 for (size_t i = 0; i < newSize; ++i)
                 {
-                    // Move construct to new buffer if move is noexcept
-                    allocator_traits::construct(mAllocator, newData + i, std::move_if_noexcept(mData[i]));
-                    allocator_traits::destroy(mAllocator, mData + i);
+                    // Move construct to new buffer if move is noexcept, otherwise copy
+                    std::construct_at(newData + i, std::move_if_noexcept(mData[i]));
+                    std::destroy_at(mData + i);
                 }
             }
             
             // Destroy rest of old buffer
-            for (size_type i = newSize; i < mSize; ++i)
-            {
-                allocator_traits::destroy(mAllocator, mData + i);
-            }
+            std::destroy_n(mData, (newSize < mSize ? mSize - newSize : 0));
 
             // Redirect member variables to new data
             allocator_traits::deallocate(mAllocator, mData, mCapacity);
@@ -456,8 +433,13 @@ namespace eng
         value_type* mData;
     };
 
+}
+
+namespace std
+{    
+
     template<typename Type>
-    constexpr void swap(vector<Type>& first, vector<Type>& second) noexcept
+    constexpr void swap(eng::vector<Type>& first, eng::vector<Type>& second) noexcept
     {
         first.swap(second);
     }

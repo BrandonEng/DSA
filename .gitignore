@@ -38,3 +38,6 @@ obj
 .vscode
 *.make
 Makefile
+
+# Experimental
+experimental
