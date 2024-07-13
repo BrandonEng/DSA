@@ -8,6 +8,7 @@
 namespace eng
 {
 
+    // DISCLAIMER: Implementation not true to ISO C++ standards nor tested for accuracy or stability.
     template<typename Type, typename Allocator = std::allocator<Type>>
     struct vector
     {
@@ -53,10 +54,10 @@ namespace eng
         constexpr vector(vector&& other, const allocator_type& alloc) noexcept :
             vector(alloc)
         {
-            swap(other);
+            swap_without_allocator(other);
         }
         constexpr vector(vector&& other) noexcept :
-            vector(other, other.mAllocator)
+            vector(std::move(other), other.mAllocator)
         { }
 
         constexpr vector(size_type count, const allocator_type& alloc = allocator_type{ }) :
@@ -76,7 +77,7 @@ namespace eng
             std::uninitialized_fill_n(mData, count, value);
         }
 
-        constexpr vector(std::initializer_list<value_type> list, const allocator_type alloc = { }) :
+        constexpr vector(std::initializer_list<value_type> list, const allocator_type& alloc = { }) :
             vector(alloc)
         {
             assign(list.begin(), list.end());
@@ -144,6 +145,7 @@ namespace eng
             {
                 throw std::out_of_range("eng::vector<Type, Allocator>::pop_back() was called on an empty container");
             }
+            
             if (mSize * GROWTH_FACTOR * GROWTH_FACTOR <= mCapacity) // More than 2 reallocations away
             {
                 reallocate(mSize * GROWTH_FACTOR);
@@ -424,7 +426,6 @@ namespace eng
             swap(mSize, other.mSize);
             swap(mCapacity, other.mCapacity);
             swap(mData, other.mData);
-
         }
 
     private:
@@ -439,8 +440,8 @@ namespace eng
 namespace std
 {    
 
-    template<typename Type>
-    constexpr void swap(eng::vector<Type>& first, eng::vector<Type>& second) noexcept
+    template<typename Type, typename Allocator>
+    constexpr void swap(eng::vector<Type, Allocator>& first, eng::vector<Type, Allocator>& second) noexcept
     {
         first.swap(second);
     }
