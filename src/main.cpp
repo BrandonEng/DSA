@@ -2,8 +2,6 @@
 #include <random>
 #include <vector>
 
-#include "eng/experimental/deque.h"
-
 #include "eng/algorithm/stable_sort.h"
 #include "eng/container/vector.h"
 
